@@ -48,34 +48,47 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # Build local image
-      - name: Build Docker image
+      #Build Docker image LOCAL
+      - name: Build Docker image locally
         id: build-image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Scan with Trivy
+      # Scan Docker image avec Trivy
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          image-ref: ${{ env.IMAGE_NAME }}:latest
           format: table
           exit-code: '1'
           ignore-unfixed: true
+          scan-type: vuln
 
-      # Push after scan OK
-      - name: Push Docker image
-        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      # Push Docker image sur GHCR
+      - name: Push Docker image to GHCR
+        run: docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest && \
+             docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-      # Sign pushed image
+      # Sign Docker image avec Cosign (sauf sur PR)
       - name: Sign the Docker image
         if: github.event_name != 'pull_request'
         env:
-          TAGS: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-        run: |
-          cosign sign --yes $TAGS
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: cosign sign --yes $IMAGE
+
+      # Optionnel : Build & push multi-plateforme / cache
+      - name: Build and push Docker image with Buildx
+        id: build-and-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
