@@ -62,11 +62,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       # Étape Trivy : scan de l'image pour détecter les vulnérabilités
       - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@v1
+        uses: aquasecurity/trivy-action@0.28.0  # version fixée existante
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           format: table
-          exit-code: '1'  # Mettre 1 si vulnérabilités critiques sont trouvées
+          exit-code: '1'
           ignore-unfixed: true
 
       - name: Push Docker image
