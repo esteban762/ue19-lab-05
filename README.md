@@ -18,7 +18,7 @@ et affiche une blague dans le terminal.
 ## Installation et lancement en local
 
 ```bash
-git clone https://github.com/<votre-compte>/ue19-lab-05.git
+git clone https://github.com/esteban762/ue19-lab-05.git
 cd ue19-lab-05
 
 python3 -m venv venv
